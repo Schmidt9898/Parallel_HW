@@ -19,7 +19,7 @@ tbuild:
 	cmake --build $(CURDIR)/debug --parallel
 
 test: tbuild
-	ctest -V --test-dir debug
+	./debug/test/testacm 
 
 bbuild:
 	cmake -E make_directory $(CURDIR)/release
