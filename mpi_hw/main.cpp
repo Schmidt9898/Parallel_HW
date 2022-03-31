@@ -83,8 +83,8 @@ void MA(float *a,float *b,int N)
 int main(int argc, char *argv[])  {
 
 int n=3;
-float* ai=new float[n*n]();
-float* bi=new float[n*n]();
+float* ai;
+float* bi;
 float* ao=new float[n*n]();
 float* bo=new float[n*n]();
 float* c=new float[n*n]();
@@ -165,6 +165,25 @@ if(task_need>numtasks)
 
 if(rank==0)
 {
+
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < N; j++) {
+		if(i==j){
+
+      A[i*N+j] = 1;
+      B[i*N+j] = 1;
+		}else{
+      A[i*N+j] = 0;
+      B[i*N+j] = 0;
+		}
+    }
+  }
+
+
+
+
+ai=get_part_mat(A.data(),0,numtasks,n,N);
+bi=get_part_mat(B.data(),0,numtasks,n,N);
 for(int i=1;i<numtasks;i++)
 	{
 	float* t=get_part_mat(A.data(),i,numtasks,n,N);
@@ -176,6 +195,8 @@ for(int i=1;i<numtasks;i++)
 	}
 }else
 {
+	ai=new float[n*n]();
+	bi=new float[n*n]();
 	MPI_Status s;
 	MPI_Recv(ai, n*n, MPI_FLOAT, 0, 1,MPI_COMM_WORLD, &s);
 	MPI_Recv(bi, n*n, MPI_FLOAT, 0, 2,MPI_COMM_WORLD, &s);
@@ -215,6 +236,7 @@ for(int i=1;i<numtasks;i++)
 
 if(rank==0)
 {
+	put_part_mat(c,C.data(),0,numtasks,n,N);
 std::cout<<"gather.\n";
 
 	float* t=new float[n*n]();
@@ -239,6 +261,21 @@ else
 
 if(rank==0)
 {
+
+
+std::vector<float> C_test(N*N);
+MM(A.data(),B.data(),C_test.data(),N);
+int i=0;
+for(i=0;i<C.size();i++)
+{
+	//std::cout<<C[i]<<"\n";
+	if(C[i]!=C_test[i]){
+		std::cout<<C[i]<<"!="<<C_test[i]<<"failed\n";
+	//break;
+	}
+}
+if(i>=C.size())
+	std::cout<<"passed\n";
 
 
 
