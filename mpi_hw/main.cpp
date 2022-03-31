@@ -35,7 +35,7 @@ void put_part_mat(float * m,float * M,int rank_n,int tasksize,int n,int N)
 	int y=rank_n%n;
 	int x=rank_n/n;
 
-	std::cout<<x<<" x,"<<y<<" y\n";
+	//std::cout<<x<<" x,"<<y<<" y\n";
 
 	int size_x=n*x,size_y=n*y;
 	for (int i=0;i<n;i++)
@@ -160,47 +160,43 @@ if(task_need>numtasks)
     //Get my neighbours in dirmension 1
     MPI_Cart_shift(cartcomm, 1, 1, &bal, &jobb);
 
-    printf("rank= %d coords= %d %d  neighbors(u,d,l,r)= %d %d %d %d\n",
-        rank,coords[0],coords[1],fel,le,bal,jobb);
+    //printf("rank= %d coords= %d %d  neighbors(u,d,l,r)= %d %d %d %d\n",
+    //    rank,coords[0],coords[1],fel,le,bal,jobb);
 
 if(rank==0)
 {
 
-  for (int i = 0; i < N; i++) {
-    for (int j = 0; j < N; j++) {
-		if(i==j){
-
-      A[i*N+j] = 1;
-      B[i*N+j] = 1;
-		}else{
-      A[i*N+j] = 0;
-      B[i*N+j] = 0;
+	for (int i = 0; i < N; i++) {
+		for (int j = 0; j < N; j++) {
+		A[i*N+j] = 1;
+		if(i==j)
+			B[i*N+j] = 1;
+			
 		}
-    }
-  }
-
-
-
-
-ai=get_part_mat(A.data(),0,numtasks,n,N);
-bi=get_part_mat(B.data(),0,numtasks,n,N);
-for(int i=1;i<numtasks;i++)
-	{
-	float* t=get_part_mat(A.data(),i,numtasks,n,N);
-	MPI_Send(t, n*n, MPI_FLOAT, i, 1, MPI_COMM_WORLD);
-	delete[] t;
-	t=get_part_mat(B.data(),i,numtasks,n,N);
-	MPI_Send(t, n*n, MPI_FLOAT, i, 2, MPI_COMM_WORLD);
-	delete[] t;
 	}
+
+
+
+
+	ai=get_part_mat(A.data(),0,numtasks,n,N);
+	bi=get_part_mat(B.data(),0,numtasks,n,N);
+	for(int i=1;i<numtasks;i++)
+		{
+		float* t=get_part_mat(A.data(),i,numtasks,n,N);
+		MPI_Send(t, n*n, MPI_FLOAT, i, 1, MPI_COMM_WORLD);
+		delete[] t;
+		t=get_part_mat(B.data(),i,numtasks,n,N);
+		MPI_Send(t, n*n, MPI_FLOAT, i, 2, MPI_COMM_WORLD);
+		delete[] t;
+		}
 }else
-{
-	ai=new float[n*n]();
-	bi=new float[n*n]();
-	MPI_Status s;
-	MPI_Recv(ai, n*n, MPI_FLOAT, 0, 1,MPI_COMM_WORLD, &s);
-	MPI_Recv(bi, n*n, MPI_FLOAT, 0, 2,MPI_COMM_WORLD, &s);
-}
+	{
+		ai=new float[n*n]();
+		bi=new float[n*n]();
+		MPI_Status s;
+		MPI_Recv(ai, n*n, MPI_FLOAT, 0, 1,MPI_COMM_WORLD, &s);
+		MPI_Recv(bi, n*n, MPI_FLOAT, 0, 2,MPI_COMM_WORLD, &s);
+	}
 
 
 
@@ -212,11 +208,33 @@ for(int i=1;i<numtasks;i++)
 	int x=coords[0],y=coords[1];
 	//C=A(x,0)*B(0,y) + A(x,1)*B(1,y) + A(x,2)*B(2,y)
 	//c=A(x,0)*B(0,y) + A(x,1)*B(1,y) + A(x,2)*B(2,y)
+	//skewing
+	//xa by
+	for(int i=0;i<x;i++)
+	{
+
+	swap(ai,ao);//put into send buff
+	MPI_Isend(ao, n*n, MPI_FLOAT, bal, 1, MPI_COMM_WORLD, &reqs[0]);
+    MPI_Irecv(ai, n*n, MPI_FLOAT, jobb, 1, MPI_COMM_WORLD, &reqs[1]);
+	MPI_Waitall(2, reqs, stats);
+	}
+	for(int i=0;i<y;i++)
+	{
+	swap(bi,bo);//put into send buff
+	MPI_Isend(bo, n*n, MPI_FLOAT, fel, 2, MPI_COMM_WORLD, &reqs[0]);
+    MPI_Irecv(bi, n*n, MPI_FLOAT, le, 2, MPI_COMM_WORLD, &reqs[1]);
+	MPI_Waitall(2, reqs, stats);
+	}
+	
+	MM(ai,bi,temp,n);
+
+	MA(temp,c,n);
+	//k loop
 	int k=N/n -1;
 	for (int i=0;i<k;i++)
 	{
 
-	MM(ai,bi,temp,n);
+
 	swap(ai,ao);//put into send buff
 	swap(bi,bo);//put into send buff
 	MPI_Isend(ao, n*n, MPI_FLOAT, bal, 1, MPI_COMM_WORLD, &reqs[0]);
@@ -224,11 +242,12 @@ for(int i=1;i<numtasks;i++)
 
     MPI_Irecv(ai, n*n, MPI_FLOAT, jobb, 1, MPI_COMM_WORLD, &reqs[2]);
     MPI_Irecv(bi, n*n, MPI_FLOAT, le, 2, MPI_COMM_WORLD, &reqs[3]);
-	//send a,b
-	//receive a,b
-	MA(temp,c,n);
 
 	MPI_Waitall(4, reqs, stats);
+
+	MM(ai,bi,temp,n);
+	MA(temp,c,n);
+	//std::cout<<c[0]<<" temp.\n";
 	}
 
 
@@ -254,7 +273,7 @@ std::cout<<"done gather.\n";
 else
 	{
 		MPI_Send(c, n*n, MPI_FLOAT, 0, 3, MPI_COMM_WORLD);
-		std::cout<<"send.\n";
+		//std::cout<<"send.\n";
 	}
 
 
@@ -269,13 +288,13 @@ int i=0;
 for(i=0;i<C.size();i++)
 {
 	//std::cout<<C[i]<<"\n";
-	if(C[i]!=C_test[i]){
-		std::cout<<C[i]<<"!="<<C_test[i]<<"failed\n";
+	//if(C[i]!=C_test[i]){
+		std::cout<<i<<" i "<<C[i]<<"!="<<C_test[i]<<"\n";//<<"failed\n";
 	//break;
-	}
+	//}
 }
-if(i>=C.size())
-	std::cout<<"passed\n";
+//if(i>=C.size())
+//	std::cout<<"passed\n";
 
 
 
