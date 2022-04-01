@@ -263,18 +263,18 @@ if(rank==0)
 
 	MPI_Waitall(4, reqs, stats);
 
-	if(rank==3)
+	MM(ai,bi,temp,n);
+
+	if(rank==0)
 	{
 				//std::cout<<rank<<"-"<<x<<" x,\n";
 		for(int i=0;i<n;i++){
 			for(int j=0;j<n;j++)
-				std::cout<<ao[i*n+j]<<",";
+				std::cout<<temp[i*n+j]<<",";
 			std::cout<<"\n";
 
 		}
 	}
-
-	MM(ai,bi,temp,n);
 	MA(temp,c,n);
 	//std::cout<<c[0]<<" temp.\n";
 	}
