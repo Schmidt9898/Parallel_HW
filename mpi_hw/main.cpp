@@ -15,17 +15,18 @@ float* get_part_mat(float * M,int rank_n,int tasksize,int n,int N)
 {
 	int y=rank_n%n;
 	int x=rank_n/n;
-	//std::cout<<x<<" x,"<<y<<" y\n";
+	//std::cout<<rank_n<<" "<<n<<" n,"<<y<<" y\n";
 
 
 	float * m=new float[n*n]();
 	int size_x=n*x,size_y=n*y;
+	//std::cout<<size_x<<" x,"<<size_y<<" y\n";
 	for (int i=0;i<n;i++)
 	{
 		for (int j=0;j<n;j++)
 		{
-	//std::cout<<i<<" x,"<<j<<" y\n";
-			m[i*n+j]=M[(size_x+i)*N+j];
+			m[i*n+j]=M[(size_x+i)*N+(j+size_y)];
+			//std::cout<<size_x<<" x,"<<size_y<<" y\n";
 		}
 	}
 	return m;
@@ -46,10 +47,6 @@ void put_part_mat(float * m,float * M,int rank_n,int tasksize,int n,int N)
 		}
 	}
 }
-
-
-
-
 
 
 
@@ -168,7 +165,7 @@ if(rank==0)
 
 	for (int i = 0; i < N; i++) {
 		for (int j = 0; j < N; j++) {
-		A[i*N+j] = 1;
+		A[i*N+j] = i*N+j;
 		if(i==j)
 			B[i*N+j] = 1;
 			
@@ -182,8 +179,22 @@ if(rank==0)
 	bi=get_part_mat(B.data(),0,numtasks,n,N);
 	for(int i=1;i<numtasks;i++)
 		{
+			//std::cout<<i<<" i\n";
 		float* t=get_part_mat(A.data(),i,numtasks,n,N);
 		MPI_Send(t, n*n, MPI_FLOAT, i, 1, MPI_COMM_WORLD);
+
+/*	if(i==2)
+	{
+				//std::cout<<rank<<"-"<<x<<" x,\n";
+		for(int i=0;i<n;i++){
+			for(int j=0;j<n;j++)
+				std::cout<<t[i*n+j]<<",";
+			std::cout<<"\n";
+		}
+			std::cout<<"----------\n";
+	}
+*/
+
 		delete[] t;
 		t=get_part_mat(B.data(),i,numtasks,n,N);
 		MPI_Send(t, n*n, MPI_FLOAT, i, 2, MPI_COMM_WORLD);
@@ -206,10 +217,14 @@ if(rank==0)
 
 	//init
 	int x=coords[0],y=coords[1];
+	//std::cout<<x<<" x,\n";
+	//std::cout<<rank<<"-"<<x<<" x,\n";
 	//C=A(x,0)*B(0,y) + A(x,1)*B(1,y) + A(x,2)*B(2,y)
 	//c=A(x,0)*B(0,y) + A(x,1)*B(1,y) + A(x,2)*B(2,y)
 	//skewing
 	//xa by
+
+
 	for(int i=0;i<x;i++)
 	{
 
@@ -218,6 +233,9 @@ if(rank==0)
     MPI_Irecv(ai, n*n, MPI_FLOAT, jobb, 1, MPI_COMM_WORLD, &reqs[1]);
 	MPI_Waitall(2, reqs, stats);
 	}
+
+
+
 	for(int i=0;i<y;i++)
 	{
 	swap(bi,bo);//put into send buff
@@ -244,6 +262,17 @@ if(rank==0)
     MPI_Irecv(bi, n*n, MPI_FLOAT, le, 2, MPI_COMM_WORLD, &reqs[3]);
 
 	MPI_Waitall(4, reqs, stats);
+
+	if(rank==3)
+	{
+				//std::cout<<rank<<"-"<<x<<" x,\n";
+		for(int i=0;i<n;i++){
+			for(int j=0;j<n;j++)
+				std::cout<<ao[i*n+j]<<",";
+			std::cout<<"\n";
+
+		}
+	}
 
 	MM(ai,bi,temp,n);
 	MA(temp,c,n);
@@ -287,11 +316,11 @@ MM(A.data(),B.data(),C_test.data(),N);
 int i=0;
 for(i=0;i<C.size();i++)
 {
-	//std::cout<<C[i]<<"\n";
-	//if(C[i]!=C_test[i]){
-		std::cout<<i<<" i "<<C[i]<<"!="<<C_test[i]<<"\n";//<<"failed\n";
-	//break;
-	//}
+	std::cout<<C[i]<<"\n";
+	if(C[i]!=C_test[i]){
+			std::cout<<i<<" i "<<C[i]<<"!="<<C_test[i]<<"\n";//<<"failed\n";
+	break;
+	}
 }
 //if(i>=C.size())
 //	std::cout<<"passed\n";
