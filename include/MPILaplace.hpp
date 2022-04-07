@@ -11,6 +11,9 @@ extern int ymax_full;
 
 extern int gbl_x_begin;
 extern int gbl_y_begin;
+extern int coords[2];
+extern int dims[2];
 
-void MPISetup(unsigned *xmax, unsigned *ymax);
+
+void MPISetup(int *xmax, int *ymax);
 void exchangeHalo(unsigned xmax, unsigned ymax, double *arr);

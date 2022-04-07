@@ -27,8 +27,8 @@ int main(int argc, char** argv) {
         }
         maxSteps = static_cast<decltype(maxSteps)::value_type>(tmp);
     }
-    fmt::print("The size of the grid is {}\n", grid);
     Simulator s{ grid };
+    //fmt::print("The size of the grid is {}\n", grid);
     Simulator::setPrinting(true);
     fmt::print("Number of used OpenMP threads is {}\n", omp_get_max_threads());
     if (maxSteps) {

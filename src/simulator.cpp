@@ -42,13 +42,13 @@ public:
 };
 
 
-Timer sUM("solveUMomentum",4);
-Timer aBU("applyBoundaryU",2);
-Timer sVM("solveVMomentum",3);
-Timer aBV("applyBoundaryV",1);//
-Timer sCEP("solveContinuityEquationP",4);
-Timer aBP("applyBoundaryP",1);//
-Timer cE("calculateError",3);
+//Timer sUM("solveUMomentum",4);
+//Timer aBU("applyBoundaryU",2);
+//Timer sVM("solveVMomentum",3);
+//Timer aBV("applyBoundaryV",1);//
+//Timer sCEP("solveContinuityEquationP",4);
+//Timer aBP("applyBoundaryP",1);//
+//Timer cE("calculateError",3);
 //Timer iU("iterateU",1);
 //Timer iV("iterateV",);
 //Timer iP("iterateP",);
@@ -87,14 +87,14 @@ void Simulator::initP() {
 	}
 }
 
-void Simulator::solveUMomentum(const FloatType Re) {
+void Simulator::solveUMomentum(const FloatType Re) { //this updates un
 	//un, u, v, p    *  grid-2*grid-1
-	sUM.grid=(grid-2)*(grid-1);
-	sUM.start();
-
-	#pragma omp parallel for collapse(1)
+	//sUM.grid=(grid-2)*(grid-1);
+	//sUM.start();
+	//exchangeHalo(grid,grid,un.data());
+	//#pragma omp parallel for collapse(1)
 	for (SizeType i = 1; i <= (grid - 2); i++) {
-		#pragma omp simd
+		//#pragma omp simd
 		for (SizeType j = 1; j <= (grid - 1); j++) {
 			un[(i) * (grid + 1) + j] = u[(i) * (grid + 1) + j]
 				- dt
@@ -106,36 +106,47 @@ void Simulator::solveUMomentum(const FloatType Re) {
 					 + (u[(i) * (grid + 1) + j + 1] - 2.0 * u[(i) * (grid + 1) + j] + u[(i) * (grid + 1) + j - 1]) / dy / dy);
 		}
 	}
-	sUM.stop();
+	//sUM.stop();
 }
 
-void Simulator::applyBoundaryU() {
+void Simulator::applyBoundaryU() {//this updates un
 	//un * grid-1  *2
-	aBU.grid=grid-1  *2;
-	aBU.start();
-	#pragma omp parallel for collapse(1)
+	//aBU.grid=grid-1  *2;
+	//aBU.start();
+	//#pragma omp parallel for collapse(1)
+
+
+
+
+	if(coords[1]==0)
 	for (SizeType j = 1; j <= (grid - 1); j++) {
 		//un[(0) * (grid + 1) + j] = 0.0;
 		un[j] = 0.0;// WELL, is this optimizing ?
+		}
+	if(coords[1]==dims[1])
+	for (SizeType j = 1; j <= (grid - 1); j++) {
 		un[(grid - 1) * (grid + 1) + j] = 0.0;
 	}
 	//un *grid
-	#pragma omp parallel for collapse(1)
+	//#pragma omp parallel for collapse(1)
+	if(coords[0]==0)
 	for (SizeType i = 0; i <= (grid - 1); i++) {
-		un[(i) * (grid + 1) + 0] = -un[(i) * (grid + 1) + 1];
+		un[(i) * (grid + 1) + 0] = -un[(i) * (grid + 1) + 1];}
+	if(coords[0]==dims[0])
+	for (SizeType i = 0; i <= (grid - 1); i++) {
 		un[(i) * (grid + 1) + grid] = 2 - un[(i) * (grid + 1) + grid - 1];
 	}
-	aBU.stop();
+	//aBU.stop();
 
 }
 
 void Simulator::solveVMomentum(const FloatType Re) {
 	//vn  v  u  *grid-1
-	sVM.grid=grid-1;
-	sVM.start();
-	#pragma omp parallel for collapse(1)
+	//sVM.grid=grid-1;
+	//sVM.start();
+	//#pragma omp parallel for collapse(1)
 	for (SizeType i = 1; i <= (grid - 1); i++) {
-		#pragma omp simd
+		//#pragma omp simd
 		for (SizeType j = 1; j <= (grid - 2); j++) {
 			vn[(i)*grid + j] = v[(i)*grid + j]
 				- dt * (0.25 * ((u[(i) * (grid + 1) + j] + u[(i) * (grid + 1) + j + 1]) * (v[(i)*grid + j] + v[(i + 1) * grid + j])
@@ -146,40 +157,50 @@ void Simulator::solveVMomentum(const FloatType Re) {
 							  + (v[(i)*grid + j + 1] - 2.0 * v[(i)*grid + j] + v[(i)*grid + j - 1]) / dy / dy);
 		}
 	}
-	sVM.stop();
+	//sVM.stop();
 }
 
 void Simulator::applyBoundaryV() {
-	aBV.grid=grid-2;
-	aBV.start();
-	#pragma omp parallel for collapse(1)
+	//aBV.grid=grid-2;
+	//aBV.start();
+	//#pragma omp parallel for collapse(1)
+	
+	if(coords[1]==0)
 	for (SizeType j = 1; j <= (grid - 2); j++) {
-		vn[(0) * grid + j] = -vn[(1) * grid + j];
+		vn[(0) * grid + j] = -vn[(1) * grid + j];}
+	if(coords[1]==dims[1])
+	for (SizeType j = 1; j <= (grid - 2); j++) {
 		vn[(grid)*grid + j] = -vn[(grid - 1) * grid + j];
 	}
-	aBV.stop();
-	aBV.grid=grid+1;
-	aBV.start();
-	#pragma omp parallel for collapse(1)
+	//aBV.stop();
+	//aBV.grid=grid+1;
+	//aBV.start();
+	//#pragma omp parallel for collapse(1)
+	if(coords[0]==0)
 	for (SizeType i = 0; i <= (grid); i++) {
-		vn[(i)*grid + 0] = 0.0;
+		vn[(i)*grid + 0] = 0.0;}
+	if(coords[0]==dims[0])
+	for (SizeType i = 0; i <= (grid); i++) {
 		vn[(i)*grid + grid - 1] = 0.0;
 	}
-	aBV.stop();
+	//aBV.stop();
 }
 
 void Simulator::solveContinuityEquationP(const FloatType delta) {
 	//pn,p,un,vn grid-1*grid-1
-	sCEP.grid=(grid-1)*(grid-1);
-	sCEP.start();
-	#pragma omp parallel for collapse(1)
+	//sCEP.grid=(grid-1)*(grid-1);
+	//sCEP.start();
+	//#pragma omp parallel for collapse(1)
+	//exchangeHalo(grid,grid,un.data());
+	//exchangeHalo(grid,grid,vn.data());
+	
 	for (SizeType i = 1; i <= (grid - 1); i++) {
 		for (SizeType j = 1; j <= (grid - 1); j++) {
 			pn[(i) * (grid + 1) + j] = p[(i) * (grid + 1) + j]
 				- dt * delta * ((un[(i) * (grid + 1) + j] - un[(i - 1) * (grid + 1) + j]) / dx + (vn[(i)*grid + j] - vn[(i)*grid + j - 1]) / dy);
 		}
 	}
-	sCEP.stop();
+	//sCEP.stop();
 }
 
 //.grid=grid;
@@ -190,33 +211,41 @@ void Simulator::solveContinuityEquationP(const FloatType delta) {
 
 
 void Simulator::applyBoundaryP() {
-	aBP.grid=grid-1;
-	aBP.start();
-	#pragma omp parallel for collapse(1)
-	for (SizeType i = 1; i <= (grid - 1); i++) {
-		pn[(i) * (grid + 1) + 0] = pn[(i) * (grid + 1) + 1];
-		pn[(i) * (grid + 1) + grid] = pn[(i) * (grid + 1) + grid - 1];
+	//aBP.grid=grid-1;
+	//aBP.start();
+	//#pragma omp parallel for collapse(1)
+	if(coords[1]==0)
+		for (SizeType i = 1; i <= (grid - 1); i++) {
+			pn[(i) * (grid + 1) + 0] = pn[(i) * (grid + 1) + 1];
 	}
-	aBP.stop();
-	aBP.grid=grid+1;
-	aBP.start();
-	#pragma omp parallel for collapse(1)
-	for (SizeType j = 0; j <= (grid); j++) {
-		pn[(0) * (grid + 1) + j] = pn[(1) * (grid + 1) + j];
-		pn[(grid) * (grid + 1) + j] = pn[(grid - 1) * (grid + 1) + j];
+	if(coords[1]==dims[1]-1)
+		for (SizeType i = 1; i <= (grid - 1); i++) {
+			pn[(i) * (grid + 1) + grid] = pn[(i) * (grid + 1) + grid - 1];
 	}
-	aBP.stop();
+	//aBP.stop();
+	//aBP.grid=grid+1;
+	//aBP.start();
+	//#pragma omp parallel for collapse(1)
+	if(coords[0]==0)
+		for (SizeType j = 0; j <= (grid); j++) {
+			pn[(0) * (grid + 1) + j] = pn[(1) * (grid + 1) + j];
+	}
+	if(coords[0]==dims[0]-1)
+		for (SizeType j = 0; j <= (grid); j++) {
+			pn[(grid) * (grid + 1) + j] = pn[(grid - 1) * (grid + 1) + j];
+	}
+	//aBP.stop();
 }
 
 Simulator::FloatType Simulator::calculateError() {
 	//m,un,vn grid-1*grid-1
-	cE.grid=(grid-1)*(grid-1);
-	cE.start();
+	//cE.grid=(grid-1)*(grid-1);
+	//cE.start();
 	FloatType error = 0.0;
-	#pragma omp parallel for collapse(1) reduction(+:error)
+	//#pragma omp parallel for collapse(1) reduction(+:error)
 	for (SizeType i = 1; i <= (grid - 1); i++) {
 		FloatType p_error = 0.0;
-		#pragma omp simd
+		//#pragma omp simd
 		for (SizeType j = 1; j <= (grid - 1); j++) {
 			m[(i) * (grid + 1) + j] =
 				((un[(i) * (grid + 1) + j] - un[(i - 1) * (grid + 1) + j]) / dx + (vn[(i)*grid + j] - vn[(i)*grid + j - 1]) / dy);
@@ -224,9 +253,15 @@ Simulator::FloatType Simulator::calculateError() {
 			}
 		error += p_error;
 	}
-	cE.stop();
 
-	return error;
+	//fmt::print("Error is {} <--\n", error);
+
+	double true_error = 0.0;
+	MPI_Allreduce(&error , &true_error , 1 , MPI_DOUBLE , MPI_SUM  , MPI_COMM_WORLD);
+	//MPI_Reduce(&error , &true_error , 1 , MPI_DOUBLE , MPI_SUM , 0 , MPI_COMM_WORLD);
+	//cE.stop();
+
+	return true_error;
 }
 
 void Simulator::iterateU() {
@@ -261,6 +296,7 @@ void Simulator::deallocate() {
 	// because that deallocates automatically
 	// but if we have to use a more raw data structure later it is needed
 	// and when the the Tests overwrites some member those might won't deallocate
+	MPI_Finalize();
 }
 
 Simulator::Simulator(SizeType gridP)
@@ -268,21 +304,26 @@ Simulator::Simulator(SizeType gridP)
 		  if (g <= 1) {
 			  throw std::runtime_error("Grid is smaller or equal to 1.0, give larger number");
 		  }
-		  return g;
+		  int gx=int(g);
+		  int gy=int(g);
+		  MPISetup(&gx, &gy);
+		  return SizeType(gx);
 	  }(gridP)),
 	  dx(1.0 / static_cast<FloatType>(grid - 1)),
 	  dy(1.0 / static_cast<FloatType>(grid - 1)),
 	  dt(0.001 / std::pow(grid / 128.0 * 2.0, 2.0)),
-	  u(grid * (grid + 1)),
-	  un(grid * (grid + 1)),
-	  v((grid + 1) * grid),
-	  vn((grid + 1) * grid),
-	  p((grid + 1) * (grid + 1)),
+	  u	((grid + 1) * (grid + 1)),
+	  un((grid + 1) * (grid + 1)),
+	  v	((grid + 1) * (grid + 1)),
+	  vn((grid + 1) * (grid + 1)),
+	  p	((grid + 1) * (grid + 1)),
 	  pn((grid + 1) * (grid + 1)),
-	  m((grid + 1) * (grid + 1)) {
+	  m	((grid + 1) * (grid + 1)) {
+    //fmt::print("The size of the grid is {}\n", grid);
 	initU();
 	initV();
 	initP();
+
 }
 
 void Simulator::run(const FloatType delta, const FloatType Re, unsigned maxSteps) {
@@ -297,29 +338,35 @@ void Simulator::run(const FloatType delta, const FloatType Re, unsigned maxSteps
 
 		solveVMomentum(Re);
 		applyBoundaryV();
+		exchangeHalo(grid,grid,un.data());
+		exchangeHalo(grid,grid,vn.data());
 
 		solveContinuityEquationP(delta);
 		applyBoundaryP();
 
 		error = calculateError();
 
-		if (printing && (step % 1000 == 1)) {
+		if (my_rank==0 && printing && (step % 1000 == 1)) {
 			fmt::print("Error is {} for the step {}\n", error, step);
 		}
 
 		iterateU();
 		iterateV();
 		iterateP();
+		exchangeHalo(grid,grid,u.data());
+		exchangeHalo(grid,grid,v.data());
+		exchangeHalo(grid,grid,p.data());
+
 		++step;
 	}
-	std::cout<<"Name 		    Count 		Time 		GB/s\n";
-	sUM .print();
-	aBU .print();
-	sVM .print();
-	aBV .print();
-	sCEP.print();
-	aBP .print();
-	cE  .print();
+	//std::cout<<"Name 		    Count 		Time 		GB/s\n";
+	//sUM .print();
+	//aBU .print();
+	//sVM .print();
+	//aBV .print();
+	//sCEP.print();
+	//aBP .print();
+	//cE  .print();
 
 
 }
