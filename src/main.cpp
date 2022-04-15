@@ -1,13 +1,14 @@
-#include "fmt/core.h"
+//#include "fmt/core.h"
 #include "simulator.hpp"
 #include <iostream>
 #include <optional>
 #include <stdlib.h>
 #include "omp.h"
-#include "MPIHandler.hpp"
+//#include "acc.h"
+//#include "MPIHandler.hpp"
 
 int main(int argc, char** argv) {
-    MPIHandler::getInstance()->setArgs(argc, argv);
+    //MPIHandler::getInstance()->setArgs(argc, argv);
     // Size from command line if specified
     Simulator::SizeType grid = 256;
     if (argc > 1) {
@@ -28,14 +29,14 @@ int main(int argc, char** argv) {
         maxSteps = static_cast<decltype(maxSteps)::value_type>(tmp);
     }
     Simulator s{ grid };
-    //fmt::print("The size of the grid is {}\n", grid);
+    //printf("The size of the grid is {}\n", grid);
     Simulator::setPrinting(true);
-    fmt::print("Number of used OpenMP threads is {}\n", omp_get_max_threads());
+    //printf("Number of used OpenMP threads is %d\n", omp_get_max_threads());
     if (maxSteps) {
-        fmt::print("The maximum number of steps is {}\n", maxSteps.value());
+        printf("The maximum number of steps is %d\n", maxSteps.value());
         s.run(4.5, 100.0, maxSteps.value());
     } else {
-        fmt::print("There is no maximum steps, it will run until it goes into a steady state");
+        printf("There is no maximum steps, it will run until it goes into a steady state");
         s.run(4.5, 100.0);
     }
 }

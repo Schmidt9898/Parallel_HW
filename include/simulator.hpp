@@ -1,8 +1,8 @@
 #pragma once
 #include <experimental/filesystem>
 #include <vector>
-#include <mpi.h>
-#include "MPILaplace.hpp"
+//#include <mpi.h>
+//#include "MPILaplace.hpp"
 
 class Simulator {
     static inline bool printing = false;
@@ -14,8 +14,15 @@ public:
 
     // these should be a private section (until constructor), but for testing and benchmarking we keep it public
     SizeType grid;
+    
     const FloatType dx, dy, dt;
-    std::vector<FloatType> u, un, v, vn, p, pn, m;
+    double * __restrict__ u;
+    double * __restrict__ un;
+    double * __restrict__ v;
+    double * __restrict__ vn;
+    double * __restrict__ p;
+    double * __restrict__ pn;
+    double * __restrict__ m;
 
     // helper functions for constructor
     void initU();
