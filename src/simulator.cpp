@@ -59,7 +59,7 @@ void Simulator::applyBoundaryU() {
         un[(0) * (grid + 1) + j] = 0.0;
         un[(grid - 1) * (grid + 1) + j] = 0.0;
     }
-
+    #pragma acc parallel loop independent collapse(1) present( u, un, v, vn, p, pn, m)
     for (SizeType i = 0; i <= (grid - 1); i++) {
         un[(i) * (grid + 1) + 0] = -un[(i) * (grid + 1) + 1];
         un[(i) * (grid + 1) + grid] = 2 - un[(i) * (grid + 1) + grid - 1];
